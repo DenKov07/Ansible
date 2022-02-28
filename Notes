@@ -1,0 +1,250 @@
+# Configure from web
+- name: restart apache
+  service: name=apache2 state=restarted enabled=yes
+
+- name: Configure from web [step 0 - Receiving a cookie]
+  uri:
+    method: GET
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    return_content: yes
+    status_code: 200
+    body_format: json
+    follow_redirects: true
+  register: json_response0
+
+- name: debug
+  set_fact:
+    my_attributes:
+      - key: Cookie
+        value: "{{ json_response.cookies_string }}"
+      - key: Content-Type
+        value: application/x-www-form-urlencoded
+
+    myvar0: "{{ (json_response.set_cookie.split(';')[0]).split('=')[0]  }}"
+    myvar: "{{ (json_response.set_cookie.split(';')[0]).split('=')[-1]  }}"
+
+- name: Configure from web [step 0.1 - Coppy cookie to defaults]
+  copy:
+    remote_src: no
+    content: "{{ json_response.cookies_string }}"
+    dest: "/home/vagrant/git/ansible_roles/itop3.0/defaults/cookie.txt"
+    dest: "/home/cm/cookie.yml"
+
+- name: Configure from web [step 1 - Continue]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response0.cookies_string }}"
+    body:
+      operation: next
+    body_format: json
+    return_content:  true
+    follow_redirects: true
+    status_code: 200
+  register: json_response1
+
+- name: Configure from web [step 2 - Install a new iTop]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response0.cookies_string }}"
+    body:
+      install_mode: install
+      previous_version_dir: /var/www/html/web/
+      db_server: localhost
+      db_user: itop
+      db_pwd: itop
+      db_name: itop
+      db_prefix: E_
+      db_beackup: 1
+      db_backup_path: /var/www/html/web/data/backups/manual/setup-2022-02-17_12_21
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content:  true
+  register: json_response2
+
+- name: Configure from web [step 3 - License accept]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response0.cookies_string }}"
+    body:
+      accept_license: yes
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content:  true
+  register: json_response3
+
+- name: Configure from web [step 4 - Configuration of the database connection]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response3.cookies_string }}"
+    body:
+      db_server: localhost
+      db_user: itop
+      db_pwd: itop
+      db_new_name:
+      create_db: no
+      db_name: itop
+      db_prefix: E_
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response4
+
+- name: Configure from web [step 5 - Definition of the Administrator Account]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response3.cookies_string }}"
+    body:
+      admin_user: admin
+      admin_pwd: 
+      confirm_pwd: 
+      admin_language: EN US
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response5
+
+- name: Configure from web [step 6 - Additional parameters]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response5.cookies_string }}"
+    body:
+      default_language: EN US
+      application_url: http://10.156.211.44/web/
+      graphviz_path: /usr/bin/dot
+      simple_data: no
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response6
+
+- name: Configure from web [step 7 - Elements that are to be managed inside iTop]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response5.cookies_string }}"
+    body:
+      choice%5B_0%5D: _0
+      choice%5B_1%5D: _1
+      choice%5B_2%5D: _2
+      choice%5B_3%5D: _3
+      choice%5B_4%5D: _4
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response7
+
+- name: Configure from web [step 8 - Select Service Management for Enterprises]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response7.cookies_string }}"
+    body:
+      choice%5B_0%5D: _0
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response8
+
+- name: Configure from web [step 9 - Select the type of users tickets ]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response7.cookies_string }}"
+    body:
+      choice%5B_0%5D: _0
+      choice%5B_0_0%5D: _0_0
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response9
+
+- name: Configure from web [step 10 - Select the type of IT tickets]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response9.cookies_string }}"
+    body:
+      choice%5B_0%5D: _0
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response10
+
+- name: Configure from web [step 11 - Additional ITIL tickets]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response9.cookies_string }}"
+    body:
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response11
+
+- name: Configure from web [step 12 - READY TO INSTALL]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response11.cookies_string }}"
+    body:
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response12
+
+- pause:
+    seconds: 40
+
+- name: Configure from web [step 13 - Done]
+  uri:
+    method: POST
+    url: "http://{{ansible_ssh_host}}/web/setup/wizard.php"
+    headers:
+      Cookie: "{{ json_response11.cookies_string }}"
+    body:
+      operation: next
+    status_code: 200
+    follow_redirects: true
+    body_format: json
+    return_content: true
+  register: json_response13
